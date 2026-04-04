@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: orchestrator-backend
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-anthropic/claude-3-opus}
+      - PORT=8081
+      - DATABASE_URL=/data/orchestrator.db
+      - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-10}
+      - TASK_TIMEOUT_SECONDS=${TASK_TIMEOUT_SECONDS:-300}
+      - ENABLE_LEARNING=${ENABLE_LEARNING:-true}
+      - RUST_LOG=${RUST_LOG:-info}
+    volumes:
+      - ./data:/data
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - orchestrator
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: orchestrator-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - orchestrator
+
+networks:
+  orchestrator:
+    driver: bridge
+
+volumes:
+  data:
