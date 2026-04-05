@@ -1,238 +1,207 @@
-import React, { useEffect } from 'react';
-import { useStore } from '../store';
-import {
-  Activity, Cpu, CheckCircle, AlertCircle, Clock, Server, BarChart2
-} from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Activity, Bot, ListTodo, Clock, ArrowRight, Plus } from 'lucide-react';
+import { useStore } from '../store/useStore';
+import { formatDistanceToNow } from '../utils/format';
 
 const Dashboard: React.FC = () => {
-  const { status, agents, tasks, executions, activeTaskDetails, refreshStatus, fetchAgents, fetchTasks, fetchExecutions } = useStore();
+  const { agents, tasks, stats, systemStatus, health, fetchAgents, fetchTasks } = useStore();
 
-  useEffect(() => {
-    refreshStatus();
+  React.useEffect(() => {
     fetchAgents();
     fetchTasks();
-    fetchExecutions();
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      refreshStatus();
-      fetchAgents();
-      fetchTasks();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [refreshStatus, fetchAgents, fetchTasks, fetchExecutions]);
+  }, [fetchAgents, fetchTasks]);
 
-  const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#6b7280'];
-
-  const statusData = [
-    { name: 'Active', value: status?.active_agents || 0, color: '#10b981' },
-    { name: 'Inactive', value: (status?.total_agents || 0) - (status?.active_agents || 0), color: '#6b7280' },
-  ];
-
-  const recentExecutions = executions.slice(0, 10);
+  const activeAgents = agents.filter((a) => a.status === 'active');
+  const recentTasks = tasks.slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <Clock className="w-4 h-4" />
-          {new Date().toLocaleTimeString()}
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-eon-text">Dashboard</h1>
+          <p className="text-eon-textSecondary mt-2">
+            Monitor your AI agent ecosystem at a glance
+          </p>
         </div>
+        <Link
+          to="/tasks"
+          className="btn-primary flex items-center gap-2"
+        >
+          <Plus size={20} />
+          <span>New Task</span>
+        </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          icon={<Cpu className="w-6 h-6" />}
-          title="Total Agents"
-          value={String(status?.total_agents || 0)}
-          subtitle={`${status?.active_agents || 0} active`}
-        />
-        <StatCard
-          icon={<Activity className="w-6 h-6" />}
-          title="Active Tasks"
-          value={String(status?.active_tasks || 0)}
-          subtitle={`${status?.completed_tasks || 0} completed`}
-        />
-        <StatCard
-          icon={<CheckCircle className="w-6 h-6" />}
-          title="Success Rate"
-          value={`${((status?.completed_tasks || 0) / Math.max(status?.total_tasks || 1, 1) * 100).toFixed(1)}%`}
-          subtitle={`${status?.failed_tasks || 0} failed`}
-        />
-        <StatCard
-          icon={<Clock className="w-6 h-6" />}
-          title="Avg Latency"
-          value={status?.avg_task_latency_ms ? `${(status.avg_task_latency_ms / 1000).toFixed(1)}s` : 'N/A'}
-          subtitle="per task"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Agent Status */}
-        <div className="bg-gray-800 rounded-lg p-6 shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Server className="w-5 h-5" />
-            Agent Status
-          </h2>
-          <div className="h-64 flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 text-center text-sm text-gray-400">
-            {agents.length} agent{agents.length !== 1 ? 's' : ''} registered
+      {/* System Health */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="card">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-lg ${health?.status === 'healthy' ? 'bg-eon-success/20' : 'bg-eon-error/20'}`}>
+              <Activity size={24} className={health?.status === 'healthy' ? 'text-eon-success' : 'text-eon-error'} />
+            </div>
+            <div>
+              <p className="text-sm text-eon-textSecondary">System Status</p>
+              <p className="text-xl font-semibold text-eon-text">
+                {health?.status === 'healthy' ? 'Healthy' : 'Degraded'}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Recent Task Success */}
-        <div className="bg-gray-800 rounded-lg p-6 shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <BarChart2 className="w-5 h-5" />
-            Recent Executions
-          </h2>
-          <div className="h-64 overflow-y-auto">
-            {recentExecutions.length === 0 ? (
-              <p className="text-gray-500 text-center mt-20">No executions yet</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-2">Agent</th>
-                    <th className="text-left py-2">Action</th>
-                    <th className="text-right py-2">Latency</th>
-                    <th className="text-right py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentExecutions.map((exec) => (
-                    <tr key={exec.id} className="border-b border-gray-800">
-                      <td className="py-2">{exec.agent_name || 'Unknown'}</td>
-                      <td className="py-2">{exec.action}</td>
-                      <td className="text-right py-2">{exec.latency_ms ? `${exec.latency_ms}ms` : '-'}</td>
-                      <td className="text-right py-2">
-                        {exec.success ? (
-                          <CheckCircle className="w-5 h-5 text-green-500 inline" />
-                        ) : (
-                          <AlertCircle className="w-5 h-5 text-red-500 inline" />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        <div className="card">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-eon-primary/20">
+              <Bot size={24} className="text-eon-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-eon-textSecondary">Active Agents</p>
+              <p className="text-xl font-semibold text-eon-text">
+                {activeAgents.length} / {agents.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-eon-secondary/20">
+              <ListTodo size={24} className="text-eon-secondary" />
+            </div>
+            <div>
+              <p className="text-sm text-eon-textSecondary">Tasks</p>
+              <p className="text-xl font-semibold text-eon-text">
+                {tasks.length} total
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Active Task Details */}
-      {activeTaskDetails && (
-        <div className="bg-gray-800 rounded-lg p-6 shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Activity className="w-5 h-5" />
-            Active Task: {activeTaskDetails.task.user_query.substring(0, 60)}...
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeTaskDetails.sub_tasks.map((sub) => (
-              <div key={sub.id} className="bg-gray-700 rounded p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{sub.capability}</p>
-                    <p className="text-sm text-gray-400">Agent: {sub.agent_name || 'Unassigned'}</p>
-                  </div>
-                  <StatusBadge status={sub.status} />
-                </div>
-                {sub.error && (
-                  <p className="text-red-400 text-sm mt-2">{sub.error}</p>
-                )}
-                {sub.output && (
-                  <pre className="mt-2 text-xs bg-gray-900 rounded p-2 overflow-auto max-h-40">
-                    {JSON.stringify(sub.output, null, 2)}
-                  </pre>
-                )}
-              </div>
-            ))}
+      {/* Quick Stats */}
+      {systemStatus && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-eon-text mb-4">Task Statistics</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <p className="text-sm text-eon-textSecondary">Pending</p>
+              <p className="text-2xl font-bold text-eon-text">{systemStatus.task_stats.pending}</p>
+            </div>
+            <div>
+              <p className="text-sm text-eon-textSecondary">Dispatched</p>
+              <p className="text-2xl font-bold text-eon-warning">{systemStatus.task_stats.dispatched}</p>
+            </div>
+            <div>
+              <p className="text-sm text-eon-textSecondary">Completed</p>
+              <p className="text-2xl font-bold text-eon-success">{systemStatus.task_stats.completed}</p>
+            </div>
+            <div>
+              <p className="text-sm text-eon-textSecondary">Failed</p>
+              <p className="text-2xl font-bold text-eon-error">{systemStatus.task_stats.failed}</p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* System Health */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Activity className="w-5 h-5" />
-          System Health
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-700 rounded p-4">
-            <p className="text-sm text-gray-400">Database</p>
-            <p className="font-medium text-green-400">Connected</p>
+      {/* Recent Tasks */}
+      <div className="card">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-eon-text">Recent Tasks</h2>
+          <Link
+            to="/tasks"
+            className="text-eon-primary hover:text-blue-400 flex items-center gap-1 text-sm"
+          >
+            View all <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {recentTasks.length === 0 ? (
+          <div className="text-center py-12 text-eon-textSecondary">
+            <ListTodo size={48} className="mx-auto mb-4 opacity-50" />
+            <p>No tasks yet</p>
+            <p className="text-sm">Submit your first task to get started</p>
           </div>
-          <div className="bg-gray-700 rounded p-4">
-            <p className="text-sm text-gray-400">API Latency</p>
-            <p className="font-medium">{status?.avg_task_latency_ms ? `${(status.avg_task_latency_ms / 1000).toFixed(2)}s` : 'N/A'}</p>
+        ) : (
+          <div className="space-y-3">
+            {recentTasks.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center justify-between p-4 bg-eon-surfaceLight rounded-lg"
+              >
+                <div className="flex-1">
+                  <p className="text-eon-text font-medium line-clamp-1">{task.user_query}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        task.status === 'completed'
+                          ? 'bg-eon-success/20 text-eon-success'
+                          : task.status === 'failed'
+                          ? 'bg-eon-error/20 text-eon-error'
+                          : task.status === 'dispatched'
+                          ? 'bg-eon-warning/20 text-eon-warning'
+                          : 'bg-eon-surface text-eon-textSecondary'
+                      }`}
+                    >
+                      {task.status}
+                    </span>
+                    <span className="text-xs text-eon-textSecondary">
+                      {formatDistanceToNow(task.created_at)} ago
+                    </span>
+                  </div>
+                </div>
+                <Link
+                  to={`/tasks/${task.id}`}
+                  className="ml-4 p-2 hover:bg-eon-surface rounded-lg"
+                >
+                  <ArrowRight size={20} className="text-eon-textSecondary" />
+                </Link>
+              </div>
+            ))}
           </div>
-          <div className="bg-gray-700 rounded p-4">
-            <p className="text-sm text-gray-400">Queue Depth</p>
-            <p className="font-medium">{status?.active_tasks || 0} / {status?.total_tasks || 0}</p>
-          </div>
-          <div className="bg-gray-700 rounded p-4">
-            <p className="text-sm text-gray-400">Success Rate</p>
-            <p className="font-medium">
-              {status?.total_tasks ? `${((status.completed_tasks || 0) / status.total_tasks * 100).toFixed(1)}%` : 'N/A'}
-            </p>
+        )}
+      </div>
+
+      {/* Performance Stats */}
+      {stats && stats.by_agent.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-eon-text mb-4">Agent Performance</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-eon-border">
+                  <th className="text-left py-3 px-4 text-eon-textSecondary">Agent</th>
+                  <th className="text-right py-3 px-4 text-eon-textSecondary">Tasks</th>
+                  <th className="text-right py-3 px-4 text-eon-textSecondary">Success Rate</th>
+                  <th className="text-right py-3 px-4 text-eon-textSecondary">Avg Latency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.by_agent.slice(0, 5).map((agent) => (
+                  <tr key={agent.agent_id} className="border-b border-eon-border/50">
+                    <td className="py-3 px-4 text-eon-text">{agent.agent_name}</td>
+                    <td className="py-3 px-4 text-right text-eon-text">{agent.total_tasks}</td>
+                    <td className="py-3 px-4 text-right">
+                      <span
+                        className={`${
+                          agent.success_rate >= 90
+                            ? 'text-eon-success'
+                            : agent.success_rate >= 70
+                            ? 'text-eon-warning'
+                            : 'text-eon-error'
+                        }`}
+                      >
+                        {agent.success_rate.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right text-eon-text">{agent.avg_latency_ms.toFixed(0)}ms</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
     </div>
-  );
-};
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  subtitle: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ icon, title, value, subtitle }) => (
-  <div className="bg-gray-800 rounded-lg p-6 shadow">
-    <div className="flex items-center justify-between">
-      <div className="text-blue-400">{icon}</div>
-    </div>
-    <p className="text-sm text-gray-400 mt-2">{title}</p>
-    <p className="text-3xl font-bold mt-1">{value}</p>
-    <p className="text-sm text-gray-500">{subtitle}</p>
-  </div>
-);
-
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  const styles = {
-    pending: 'bg-yellow-500/20 text-yellow-400',
-    running: 'bg-blue-500/20 text-blue-400',
-    completed: 'bg-green-500/20 text-green-400',
-    failed: 'bg-red-500/20 text-red-400',
-  };
-  return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${styles[status as keyof typeof styles] || 'bg-gray-500/20 text-gray-400'}`}>
-      {status}
-    </span>
   );
 };
 

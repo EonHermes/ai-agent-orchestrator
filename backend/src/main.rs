@@ -1,119 +1,88 @@
-use axum::{Router, Server};
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing::info;
-use sqlx::{SqlitePool, migrate::MigrateDatabase};
+mod config;
+mod db;
+mod models;
+mod services;
+mod handlers;
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-mod config;
-mod models;
-mod db;
-mod llm_service;
-mod agent_service;
-mod task_service;
-mod handlers;
+use axum::{routing::get, Router};
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tracing::{info, Level};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use config::Config;
-use llm_service::LlmService;
-use agent_service::AgentService;
-use task_service::TaskService;
-use handlers::*;
-
-pub type SharedState = Arc<AppState>;
-
-struct AppState {
-    config: Config,
-    db_pool: SqlitePool,
-    agent_service: AgentService,
-    llm_service: LlmService,
-    task_service: TaskService,
-}
+use config::Settings;
+use db::{migrator, Repository};
+use services::{agent_client::AgentClient, executor::Executor, llm::LlmService};
+use handlers::create_routes;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load configuration
+    let settings = Settings::new().unwrap_or_else(|_| Settings::default());
+
     // Initialize logging
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+    let filter_level = match settings.logging.level.as_str() {
+        "debug" => Level::DEBUG,
+        "info" => Level::INFO,
+        "warn" => Level::WARN,
+        "error" => Level::ERROR,
+        _ => Level::INFO,
+    };
+
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| format!("orchestrator={}", filter_level.to_string())),
+        )
+        .with(tracing_subscriber::fmt::layer())
         .init();
 
-    info!("Starting AI Agent Orchestrator...");
-
-    // Load configuration
-    let config = Config::from_env().map_err(|e| {
-        anyhow::anyhow!("Failed to load config from environment: {}", e)
-    })?;
+    info!("Starting AI Agent Orchestrator v1.0.0");
+    info!("Configuration loaded: port={}, database={}", settings.server.port, settings.database.url);
 
     // Initialize database
-    let db_url = config.database.url.clone();
-
-    // Create database if it doesn't exist
-    if !sqlx::Sqlite::database_exists(&db_url).await? {
-        info!("Creating database at {}", db_url);
-        sqlx::Sqlite::create_database(&db_url).await?;
-    }
-
-    let db_pool = SqlitePool::connect_lazy(&db_url)?;
-    info!("Connected to database");
-
-    // Run migrations
-    db::run_migrations(&db_pool).await?;
-    info!("Database migrations complete");
+    info!("Initializing database...");
+    let pool = migrator::init_database(&settings.database.url).await?;
+    migrator::run_migrations(&pool).await?;
+    info!("Database initialized and migrations applied");
 
     // Initialize services
-    let llm_service = LlmService::new(
-        config.llm.openrouter_api_key.clone(),
-        config.llm.openrouter_model.clone(),
-        config.llm.llm_timeout_seconds,
-        config.llm.llm_max_tokens,
-    );
+    let repo = Repository::new(pool);
+    let llm = Arc::new(LlmService::new(settings.llm)?);
+    let agent_client = Arc::new(AgentClient::new());
+    let executor = Arc::new(Executor::new(
+        Arc::new(repo.clone()),
+        llm.clone(),
+        agent_client.clone(),
+        settings.server.max_concurrent_tasks,
+    ));
 
-    let agent_service = AgentService::new(db_pool.clone(), llm_service.clone());
-    let task_service = TaskService::new(
-        db_pool.clone(),
-        llm_service.clone(),
-        agent_service.clone(),
-        config.task.max_concurrent_tasks,
-    );
+    // Build application
+    let app = create_routes(repo.clone(), llm, executor)
+        .layer(CorsLayer::new().allow_origin(
+            settings
+                .cors
+                .allowed_origins
+                .iter()
+                .next()
+                .unwrap_or(&"http://localhost:3000".to_string())
+                .parse()?,
+        ).allow_credentials(settings.cors.allow_credentials))
+        .layer(TraceLayer::new_for_http());
 
-    let shared_state = Arc::new(AppState {
-        config: config.clone(),
-        db_pool: db_pool.clone(),
-        agent_service,
-        llm_service,
-        task_service,
-    });
+    // Determine address
+    let addr = SocketAddr::from((
+        settings.server.host.parse().unwrap_or([0, 0, 0, 0].into()),
+        settings.server.port,
+    ));
 
-    // Build routes
-    let app = Router::new()
-        .route("/health", get(health_handler))
-        .route("/api/v1/status", get(status_handler))
-        // Agents
-        .route("/api/v1/agents", get(list_agents_handler).post(create_agent_handler))
-        .route("/api/v1/agents/:id", get(get_agent_handler).put(update_agent_handler).delete(delete_agent_handler))
-        .route("/api/v1/agents/capabilities", get(list_capabilities_handler))
-        .route("/api/v1/agents/:id/stats", get(get_agent_stats_handler))
-        // Tasks
-        .route("/api/v1/tasks", post(create_task_handler).get(list_tasks_handler))
-        .route("/api/v1/tasks/:id", get(get_task_handler).post(cancel_task_handler))
-        .route("/api/v1/tasks/:id/plan", get(get_task_plan_handler))
-        .route("/api/v1/parse", post(parse_task_handler))
-        // Executions
-        .route("/api/v1/executions", get(list_executions_handler))
-        .route("/api/v1/executions/:id", get(get_execution_handler))
-        .route("/api/v1/executions/stats", get(get_execution_stats_handler))
-        // Agent endpoint (for receiving tasks from orchestrator)
-        .route("/agent/execute", post(agent_execute_handler))
-        .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http())
-        .with_state(shared_state);
-
-    // Bind and serve
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     info!("Listening on http://{}", addr);
 
-    Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    // Start server
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

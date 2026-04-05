@@ -1,231 +1,203 @@
-import React, { useEffect, useState } from 'react';
-import { useStore } from '../store';
-import { Send, Eye, Play, X, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import type { ParseResponse } from '../types';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, Search, Filter, ArrowRight, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { useStore } from '../store/useStore';
+import { formatDistanceToNow } from '../utils/format';
 
 const Tasks: React.FC = () => {
-  const {
-    tasks,
-    activeTask,
-    activeTaskDetails,
-    loadingTasks,
-    fetchTasks,
-    createTask,
-    cancelTask,
-    getTask,
-    parseTask,
-  } = useStore();
-
+  const { tasks, loadingTasks, fetchTasks, submitTask } = useStore();
   const [query, setQuery] = useState('');
-  const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
-  const [parsing, setParsing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [newQuery, setNewQuery] = useState('');
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuery.trim()) return;
 
-  const handleParse = async () => {
-    if (!query.trim()) return;
-    setParsing(true);
     try {
-      const result = await parseTask(query);
-      setParseResult(result);
-    } catch (e) {
-      console.error('Parse failed:', e);
-    } finally {
-      setParsing(false);
+      await submitTask(newQuery);
+      setNewQuery('');
+      setShowSubmitForm(false);
+      fetchTasks({ status: statusFilter || undefined });
+    } catch (error) {
+      console.error('Failed to submit task:', error);
+      alert('Failed to submit task');
     }
   };
 
-  const handleSubmit = async () => {
-    if (!query.trim()) return;
-    await createTask(query);
-    setQuery('');
-    setParseResult(null);
-  };
-
-  const handleViewTask = async (id: string) => {
-    await getTask(id);
-  };
+  const filteredTasks = tasks.filter((task) => {
+    if (statusFilter && task.status !== statusFilter) return false;
+    return true;
+  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'dispatched': return <Play className="w-4 h-4 text-blue-500 animate-pulse" />;
-      case 'completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'failed': return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'cancelled': return <X className="w-4 h-4 text-gray-500" />;
-      default: return <Clock className="w-4 h-4" />;
+      case 'completed':
+        return <CheckCircle size={16} className="text-eon-success" />;
+      case 'failed':
+        return <XCircle size={16} className="text-eon-error" />;
+      case 'dispatched':
+        return <Clock size={16} className="text-eon-warning" />;
+      case 'cancelled':
+        return <AlertCircle size={16} className="text-eon-textSecondary" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-eon-success/20 text-eon-success';
+      case 'failed':
+        return 'bg-eon-error/20 text-eon-error';
+      case 'dispatched':
+        return 'bg-eon-warning/20 text-eon-warning';
+      case 'cancelled':
+        return 'bg-eon-surface text-eon-textSecondary';
+      default:
+        return 'bg-eon-surfaceLight text-eon-textSecondary';
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Tasks</h1>
-      </div>
-
-      {/* Task Input */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow">
-        <h2 className="text-xl font-semibold mb-4">Submit New Task</h2>
-        <div className="space-y-4">
-          <textarea
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-3 min-h-[100px]"
-            placeholder="Describe your task in natural language... (e.g., 'Analyze workflow performance and identify bottlenecks')"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleParse}
-              disabled={parsing || !query.trim()}
-              className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-700 px-4 py-2 rounded flex items-center gap-2"
-            >
-              <Eye className="w-4 h-4" />
-              {parsing ? 'Parsing...' : 'Preview Plan'}
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={!query.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 px-4 py-2 rounded flex items-center gap-2 flex-1"
-            >
-              <Send className="w-4 h-4" />
-              Execute
-            </button>
-          </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-eon-text">Tasks</h1>
+          <p className="text-eon-textSecondary mt-2">
+            Submit and monitor AI agent tasks
+          </p>
         </div>
-
-        {/* Parse Result */}
-        {parseResult && (
-          <div className="mt-4 p-4 bg-gray-700 rounded">
-            <h3 className="font-semibold mb-2">Execution Plan</h3>
-            <p className="text-sm text-gray-400 mb-3">{parseResult.reasoning}</p>
-            <ul className="space-y-2">
-              {parseResult.plan.map((step, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm">
-                  <span className="text-blue-400 font-mono">{idx + 1}.</span>
-                  <div>
-                    <span className="font-medium">{step.capability}</span>
-                    <p className="text-gray-400 text-xs">{step.description}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <button
+          onClick={() => setShowSubmitForm(true)}
+          className="btn-primary flex items-center gap-2"
+        >
+          <Plus size={20} />
+          <span>New Task</span>
+        </button>
       </div>
 
-      {/* Active Task Details */}
-      {activeTaskDetails && (
-        <div className="bg-gray-800 rounded-lg p-6 shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Task: {activeTaskDetails.task.user_query}</h2>
-            {activeTaskDetails.task.status !== 'completed' && activeTaskDetails.task.status !== 'cancelled' && (
-              <button
-                onClick={() => cancelTask(activeTaskDetails.task.id)}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded flex items-center gap-2 text-sm"
-              >
-                <X className="w-4 h-4" />
-                Cancel
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeTaskDetails.sub_tasks.map((sub) => (
-              <div key={sub.id} className="bg-gray-700 rounded p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{sub.capability}</span>
-                      {getStatusIcon(sub.status)}
-                    </div>
-                    <p className="text-sm text-gray-400">Agent: {sub.agent_name || 'Unassigned'}</p>
-                    {sub.latency_ms && (
-                      <p className="text-xs text-gray-500 mt-1">{sub.latency_ms}ms</p>
-                    )}
-                  </div>
-                </div>
-                {sub.error && (
-                  <p className="text-red-400 text-sm mt-2 bg-red-500/10 p-2 rounded">{sub.error}</p>
-                )}
-                {sub.output && (
-                  <details className="mt-2">
-                    <summary className="text-sm text-gray-400 cursor-pointer">View Output</summary>
-                    <pre className="mt-2 text-xs bg-gray-900 rounded p-2 overflow-auto max-h-48">
-                      {JSON.stringify(sub.output, null, 2)}
-                    </pre>
-                  </details>
-                )}
+      {/* Submit Form Modal */}
+      {showSubmitForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="card max-w-2xl w-full">
+            <h2 className="text-xl font-bold text-eon-text mb-4">Submit New Task</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="label">Describe your task in natural language</label>
+                <textarea
+                  value={newQuery}
+                  onChange={(e) => setNewQuery(e.target.value)}
+                  className="input w-full h-32"
+                  placeholder="e.g., Analyze last week's model performance and generate a report..."
+                  required
+                />
+                <p className="text-xs text-eon-textSecondary mt-2">
+                  The AI will automatically parse your request, decompose it into sub-tasks,
+                  and dispatch to the most appropriate agents.
+                </p>
               </div>
-            ))}
+
+              <div className="flex gap-3">
+                <button type="submit" className="btn-primary">
+                  Submit Task
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitForm(false)}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Task History */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow">
-        <h2 className="text-xl font-semibold mb-4">Task History</h2>
-        {loadingTasks ? (
-          <p className="text-gray-400">Loading...</p>
-        ) : tasks.length === 0 ? (
-          <p className="text-gray-500">No tasks yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="text-left py-3">Query</th>
-                  <th className="text-left py-3">Status</th>
-                  <th className="text-left py-3">Created</th>
-                  <th className="text-left py-3">Duration</th>
-                  <th className="text-right py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => {
-                  const details = activeTaskDetails?.task.id === task.id ? activeTaskDetails : null;
-                  const duration = task.completed_at && task.started_at
-                    ? `${Math.round((new Date(task.completed_at).getTime() - new Date(task.started_at).getTime()) / 1000)}s`
-                    : task.started_at ? 'Running...' : '-';
-
-                  return (
-                    <tr key={task.id} className="border-b border-gray-800 hover:bg-gray-750">
-                      <td className="py-3 max-w-md truncate" title={task.user_query}>
-                        {task.user_query}
-                      </td>
-                      <td className="py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium flex items-center w-fit gap-1 ${
-                          task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          task.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                          task.status === 'cancelled' ? 'bg-gray-500/20 text-gray-400' :
-                          task.status === 'dispatched' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {getStatusIcon(task.status)}
-                          {task.status}
-                        </span>
-                      </td>
-                      <td className="py-3 text-gray-400">
-                        {new Date(task.created_at).toLocaleString()}
-                      </td>
-                      <td className="py-3 text-gray-400">{duration}</td>
-                      <td className="py-3 text-right">
-                        <button
-                          onClick={() => handleViewTask(task.id)}
-                          className="text-blue-400 hover:text-blue-300"
-                          title="View details"
-                        >
-                          <Eye className="w-4 h-4 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* Filters */}
+      <div className="card">
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-eon-textSecondary" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="input w-full pl-10"
+            />
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <Filter size={18} className="text-eon-textSecondary" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="input w-40"
+            >
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="dispatched">Dispatched</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
       </div>
+
+      {/* Task List */}
+      {loadingTasks ? (
+        <div className="text-center py-12 text-eon-textSecondary">Loading tasks...</div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="card text-center py-12">
+          <Clock size={64} className="mx-auto mb-4 text-eon-textSecondary opacity-50" />
+          <h3 className="text-lg font-semibold text-eon-text mb-2">No Tasks Yet</h3>
+          <p className="text-eon-textSecondary mb-6">
+            Submit a task to see the orchestration in action
+          </p>
+          <button onClick={() => setShowSubmitForm(true)} className="btn-primary">
+            Submit Your First Task
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredTasks.map((task) => (
+            <Link
+              key={task.id}
+              to={`/tasks/${task.id}`}
+              className="card block hover:bg-eon-surfaceLight transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    {getStatusIcon(task.status)}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusClass(task.status)}`}>
+                      {task.status.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-eon-textSecondary">
+                      {formatDistanceToNow(task.created_at)} ago
+                    </span>
+                  </div>
+                  <p className="text-eon-text font-medium mb-2">{task.user_query}</p>
+                  {task.parsed_plan && task.parsed_plan.steps && (
+                    <div className="flex items-center gap-2 text-sm text-eon-textSecondary">
+                      <span>{task.parsed_plan.steps.length} steps</span>
+                      <span>•</span>
+                      <span>
+                        {task.parsed_plan.steps.filter((s: any) => s.agent_id).length} agents
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <ArrowRight className="text-eon-textSecondary ml-4" size={20} />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

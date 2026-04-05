@@ -1,13 +1,11 @@
 # Build stage
 FROM node:18-alpine AS builder
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json ./
-
-# Install dependencies
-RUN npm ci
+COPY package*.json ./
+RUN npm ci --only=production
 
 # Copy source
 COPY . .
@@ -15,17 +13,24 @@ COPY . .
 # Build
 RUN npm run build
 
-# Runtime stage
+# Production stage with Nginx
 FROM nginx:alpine AS runtime
 
-# Copy nginx config (we'll create this separately if needed)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy built assets
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy built files
-COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
+# Create non-root user
+RUN addgroup -g 1001 -S nginx-group && \
+    adduser -S nginx-user -G nginx-group
+
+RUN chown -R nginx-user:nginx-group /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
+
+USER nginx-user
+
 EXPOSE 80
 
-# Run nginx
 CMD ["nginx", "-g", "daemon off;"]

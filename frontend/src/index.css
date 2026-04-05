@@ -3,30 +3,27 @@
 @tailwind utilities;
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  @apply bg-eon-background text-eon-text;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-@layer utilities {
-  .line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+@layer components {
+  .btn-primary {
+    @apply bg-eon-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors;
   }
-}
+  
+  .btn-secondary {
+    @apply bg-eon-surfaceLight text-eon-text px-4 py-2 rounded-lg border border-eon-border hover:bg-eon-surface transition-colors;
+  }
 
-@layer utilities {
-  .bg-gray-750 {
-    background-color: rgb(55 65 81);
+  .card {
+    @apply bg-eon-surface rounded-lg border border-eon-border p-6;
+  }
+
+  .input {
+    @apply bg-eon-background border border-eon-border rounded-lg px-4 py-2 text-eon-text focus:outline-none focus:ring-2 focus:ring-eon-primary;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-eon-textSecondary mb-2;
   }
 }

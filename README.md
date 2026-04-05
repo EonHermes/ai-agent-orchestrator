@@ -1,489 +1,437 @@
-# AI Agent Orchestrator (EON-026)
+# 🤖 AI Agent Orchestrator (EON-026)
 
-**Production-ready meta-system that unifies all AI capabilities into a collaborative multi-agent framework**
+> A production-ready meta-system that unifies all AI capabilities into a collaborative multi-agent framework
 
-[![Rust](https://img.shields.io/badge/Rust-1.75+-orange)](https://www.rust-lang.org)
-[![React](https://img.shields.io/badge/React-18.2-blue)](https://reactjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
+[![Rust](https://img.shields.io/badge/Rust-1.75+-orange?logo=rust)](https://www.rust-lang.org)
+[![React](https://img.shields.io/badge/React-18.2-blue?logo=react)](https://reactjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue?logo=typescript)](https://www.typescriptlang.org)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-
-## Overview
-
-The AI Agent Orchestrator is a meta-system that unifies all your AI capabilities (Intelligent Workflow Assistant, Code Review Assistant, ML Registry, Analytics Aggregator, etc.) into a cohesive, intelligent assistant platform. It provides:
-
-- **Natural Language Task Decomposition**: Parse complex, multi-step user requests into structured execution plans
-- **Intelligent Agent Selection**: Automatically match sub-tasks to the most appropriate registered agents based on capabilities
-- **Cross-Service Coordination**: Execute tasks across multiple AI agents and aggregate results
-- **Learning System**: Track performance metrics to optimize agent selection over time
-- **Unified Dashboard**: Visualize system status, agent health, task execution, and analytics
-
-This project completes Daniel's AI ecosystem by making all previous projects (EON-015 through EON-025) work together seamlessly.
-
----
 
 ## ✨ Features
 
-### Core Capabilities
+- **Natural Language Task Processing**: Parse complex user queries into structured action plans
+- **Intelligent Agent Routing**: Automatically match tasks to agents based on capabilities
+- **Multi-Agent Collaboration**: Coordinate multiple AI agents to complete sophisticated workflows
+- **Real-time Monitoring**: Dashboard with live task status, agent health, and execution metrics
+- **Advanced Planning**: LLM-powered task decomposition with dependency tracking
+- **Comprehensive Audit Logging**: Full execution trail with performance metrics
+- **RESTful API**: Complete CRUD operations for agents, tasks, and executions
+- **Production Ready**: Docker Compose deployment, SQLite with WAL mode, comprehensive error handling
 
-- **Natural Language Parser**: LLM-powered (OpenRouter) task decomposition with structured JSON output
-- **Agent Registry**: CRUD operations with capability-based discovery, auto-suggestion from descriptions
-- **Intelligent Dispatcher**: Capability matching with future performance-based selection
-- **Execution Engine**: Parallel sub-task execution with timeout, error handling, retry logic
-- **Result Aggregator**: LLM-powered synthesis of multi-agent outputs into coherent responses
-- **Learning System**: Success rate tracking, latency metrics, capability-based performance stats
+## 🏗️ Architecture
 
-### API Features
-
-- **20+ REST endpoints** covering agents, tasks, executions, and system status
-- **Health checks** with database connectivity monitoring
-- **Comprehensive filtering and pagination**
-- **Real-time execution monitoring** via WebSocket-ready polling
-- **Audit logging** with full execution traces
-
-### Dashboard Features
-
-- **System Status Overview**: Agent count, active tasks, success rates, latency metrics
-- **Agent Management**: Register, update, delete agents; view capabilities; performance stats per agent
-- **Task Submission**: Natural language input with plan preview before execution
-- **Task Monitor**: Real-time status updates, sub-task progress, error visibility
-- **Execution Viewer**: Detailed logs including input/output snapshots, latencies, success/failure
-- **Analytics**: Agent performance charts, system health metrics
-
----
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Frontend (React)                        │
+│  Dashboard • Agent Registry • Task Monitor • Analytics     │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ HTTPS/WS
+┌───────────────────────────▼─────────────────────────────────┐
+│                    Nginx Reverse Proxy                      │
+│              (Load Balancing • Static Files)                │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+            ┌───────────────▼───────────────┐
+            │   AI Agent Orchestrator API    │
+            │  ┌──────────────────────────┐ │
+            │  │ Task Parser (LLM)        │ │ → Parse natural language
+            │  ├──────────────────────────┤ │
+            │  │ Execution Planner        │ │ → Create step-by-step plan
+            │  ├──────────────────────────┤ │
+            │  │ Agent Dispatcher         │ │ → Route to appropriate agents
+            │  ├──────────────────────────┤ │
+            │  │ Result Aggregator        │ │ → Combine responses
+            │  └──────────────────────────┘ │
+            └─────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+    ┌───────▼──────┐  ┌────▼─────┐  ┌─────▼──────┐
+    │ ML Service   │  │ Code AI  │  │ Analytics  │
+    │ Agent (EON-025)│  │ Assistant│  │ Aggregator │
+    └──────────────┘  └──────────┘  └────────────┘
+```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Docker & Docker Compose** (recommended)
-  - OR: Rust 1.75+, Node.js 18+, SQLite3
+- Docker & Docker Compose (latest)
+- Node.js 18+ (for local development)
+- Rust 1.75+ (for backend development)
+- OpenRouter API key (get one at [openrouter.ai](https://openrouter.ai))
 
-- **OpenRouter API Key**: Get one from [openrouter.ai](https://openrouter.ai)
-
-### One-Command Docker Deployment
+### One-Command Deployment
 
 ```bash
 # Clone the repository
-git clone https://github.com/EonHermes/ai-agent-orchestrator.git
+git clone https://github.com/EONHermes/ai-agent-orchestrator.git
 cd ai-agent-orchestrator
 
 # Set your OpenRouter API key
-export OPENROUTER_API_KEY="your-api-key-here"
+export OPENROUTER_API_KEY="your-openrouter-api-key"
 
 # Deploy with Docker Compose
 docker-compose up -d
 
-# Access the application:
-# - Frontend Dashboard: http://localhost:3000
-# - Backend API: http://localhost:8081/api/v1
-# - Health Check: http://localhost:8081/health
+# Access the application
+# Frontend Dashboard: http://localhost:3000
+# Backend API: http://localhost:8081
+# API Health: http://localhost:8081/health
 ```
-
-That's it! The backend and frontend are both running with Nginx reverse proxy.
-
----
 
 ## 📚 API Documentation
 
 ### Base URL
-
-- Development: `http://localhost:8081/api/v1`
-- Production: Configure via environment variables
+```
+http://localhost:8081/api/v1
+```
 
 ### Authentication
-
-Currently open (no auth). Add API key middleware in production.
+Currently, the API is open. For production deployments, add an API gateway (Traefik/Nginx) with JWT validation.
 
 ### Endpoints
 
-#### System
-
-```
-GET /health              - Health check (database connectivity)
-GET /api/v1/status       - System status summary (agents, tasks, stats)
-```
-
 #### Agents
-
-```
-GET    /api/v1/agents               - List all agents (query: ?status=active)
-POST   /api/v1/agents               - Register new agent (capabilities auto-suggested if empty)
-GET    /api/v1/agents/:id           - Get agent details
-PUT    /api/v1/agents/:id           - Update agent (partial update)
-DELETE /api/v1/agents/:id           - Delete agent
-GET    /api/v1/agents/capabilities  - List all unique capabilities across agents
-GET    /api/v1/agents/:id/stats     - Get performance stats for agent
-```
-
-**Create Agent Request**:
-```json
-{
-  "name": "Workflow Assistant",
-  "description": "AI-powered workflow optimization",
-  "endpoint_url": "http://workflow-assistant:8081",
-  "capabilities": ["workflow_optimization", "bottleneck_detection"],
-  "metadata": {"project": "EON-025"}
-}
-```
-
-**Note**: If `capabilities` array is empty, the system uses OpenRouter to suggest capabilities based on `description`.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/agents` | List all registered agents |
+| POST | `/agents` | Register a new agent |
+| GET | `/agents/:id` | Get agent details |
+| PUT | `/agents/:id` | Update agent status/metadata |
+| DELETE | `/agents/:id` | Unregister an agent |
+| GET | `/agents/capabilities` | List all unique capabilities |
 
 #### Tasks
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/tasks/submit` | Submit a natural language task (async) |
+| POST | `/tasks` | Create a task manually |
+| GET | `/tasks` | List tasks with filters |
+| GET | `/tasks/:id` | Get task details + sub-tasks |
+| POST | `/tasks/:id/cancel` | Cancel a running task |
 
-```
-POST /api/v1/tasks                - Create and execute task (async)
-GET  /api/v1/tasks               - List tasks (query: ?status=pending&limit=50)
-GET  /api/v1/tasks/:id           - Get task with sub-tasks
-POST /api/v1/tasks/:id/cancel    - Cancel running task
-GET  /api/v1/tasks/:id/plan      - Get execution plan (without executing)
-POST /api/v1/parse               - Parse natural language to plan (dry run)
-```
-
-**Create Task Request**:
-```json
-{
-  "user_query": "Analyze workflow performance and suggest optimizations"
-}
-```
-
-**Response**:
-```json
-{
-  "task_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "pending"
-}
-```
+#### System
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/status` | System status summary |
+| POST | `/parse` | Parse natural language without executing |
 
 #### Executions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/executions` | List sub-task executions |
+| GET | `/executions/stats` | Aggregate performance metrics |
 
-```
-GET  /api/v1/executions                  - List executions (query: ?limit=100)
-GET  /api/v1/executions/:id              - Get single execution details
-GET  /api/v1/executions/stats            - Aggregate stats per agent
+### Example API Calls
+
+```bash
+# Register an agent
+curl -X POST http://localhost:8081/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ML Registry",
+    "description": "Queries model training runs and metrics",
+    "endpoint_url": "http://ml-registry:8080",
+    "capabilities": ["query_model_runs", "get_metrics", "list_models"],
+    "metadata": {"project": "EON-025"}
+  }'
+
+# Submit a task
+curl -X POST http://localhost:8081/api/v1/tasks/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_query": "Analyze the performance of all ResNet models trained in March and generate a PDF report"
+  }'
+
+# Check task status
+curl http://localhost:8081/api/v1/tasks/:task_id
+
+# Get system health
+curl http://localhost:8081/health
 ```
 
-#### Agent Endpoint (for receiving tasks)
+## 🔧 Configuration
 
-```
-POST /agent/execute                      - Endpoint agents must implement to receive sub-tasks
+### Environment Variables
+
+The backend supports configuration via environment variables (prefixed with `ORCHESTRATOR_`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ORCHESTRATOR_SERVER_HOST` | `0.0.0.0` | Server bind address |
+| `ORCHESTRATOR_SERVER_PORT` | `8081` | Server port |
+| `ORCHESTRATOR_MAX_CONCURRENT_TASKS` | `10` | Max parallel task execution |
+| `ORCHESTRATOR_TASK_TIMEOUT_SECONDS` | `300` | Task timeout (5 min) |
+| `ORCHESTRATOR_DATABASE_URL` | `sqlite:/data/orchestrator.db` | SQLite database path |
+| `ORCHESTRATOR_LLM_OPENROUTER_API_KEY` | (required) | OpenRouter API key |
+| `ORCHESTRATOR_LLM_OPENROUTER_MODEL` | `anthropic/claude-3-opus` | LLM model for planning |
+| `ORCHESTRATOR_CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | CORS allowed origins |
+| `ORCHESTRATOR_LOGGING_LEVEL` | `info` | Log level: debug/info/warn/error |
+| `RUST_LOG` | `info` | Rust logging (augments above) |
+
+### Production Deployment
+
+1. **Using Docker Compose** (recommended):
+```bash
+# Set production environment variables
+export OPENROUTER_API_KEY="your-key"
+export ORCHESTRATOR_LOGGING_LEVEL="warn"
+
+# Use production profile
+docker-compose --profile production up -d
 ```
 
-**Agent Execution Request**:
+2. **Security Hardening**:
+   - Add NGINX rate limiting
+   - Configure TLS with Let's Encrypt
+   - Set up firewall rules (only expose ports 80/443)
+   - Use strong database passwords for Postgres migration
+   - Enable JWT authentication middleware
+
+3. **Scaling**:
+```bash
+# Scale backend instances behind Nginx
+docker-compose up -d --scale backend=3
+```
+
+## 🛠️ Development
+
+### Local Setup
+
+#### Backend
+
+```bash
+cd backend
+cargo check
+cargo test
+cargo run
+
+# With environment variables
+OPENROUTER_API_KEY=your_key cargo run
+```
+
+#### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
+```
+
+### Database Migrations
+
+Migrations are auto-applied on startup. For manual execution:
+
+```bash
+# View migration files
+ls backend/src/db/migrations/
+
+# The system uses SQLite with WAL mode enabled for better concurrency.
+# Journal mode: WAL
+# Synchronous: NORMAL
+# Cache size: 1000 pages
+```
+
+## 📊 Database Schema
+
+### Core Tables
+
+**agents**: Registered AI agents
+```sql
+id TEXT PRIMARY KEY,
+name TEXT NOT NULL,
+description TEXT,
+endpoint_url TEXT NOT NULL,
+capabilities JSON NOT NULL,      -- ["capability1", "capability2"]
+status TEXT CHECK(status IN ('active', 'inactive', 'error')),
+metadata JSON,
+created_at TIMESTAMP,
+updated_at TIMESTAMP
+```
+
+**tasks**: User-submitted tasks
+```sql
+id TEXT PRIMARY KEY,
+user_query TEXT NOT NULL,
+parsed_plan JSON,                -- Execution plan
+status TEXT CHECK(status IN ('pending', 'dispatched', 'completed', 'failed', 'cancelled')),
+error_message TEXT,
+created_at TIMESTAMP,
+started_at TIMESTAMP,
+completed_at TIMESTAMP
+```
+
+**sub_tasks**: Individual agent executions
+```sql
+id TEXT PRIMARY KEY,
+task_id TEXT NOT NULL,
+agent_id TEXT NOT NULL,
+capability TEXT NOT NULL,
+input JSON,
+output JSON,
+error TEXT,
+status TEXT CHECK(status IN ('pending', 'running', 'completed', 'failed')),
+started_at TIMESTAMP,
+completed_at TIMESTAMP,
+latency_ms INTEGER,
+FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+```
+
+**executions**: Audit log
+```sql
+id TEXT PRIMARY KEY,
+task_id TEXT NOT NULL,
+agent_id TEXT,
+step INTEGER,
+action TEXT,
+input_snapshot JSON,
+output_snapshot JSON,
+latency_ms INTEGER,
+success BOOLEAN,
+timestamp TIMESTAMP
+```
+
+**agent_performance**: Learning data (auto-updated via triggers)
+```sql
+id TEXT PRIMARY KEY,
+agent_id TEXT NOT NULL,
+capability TEXT NOT NULL,
+success_count INTEGER DEFAULT 0,
+failure_count INTEGER DEFAULT 0,
+avg_latency_ms REAL,
+last_updated TIMESTAMP,
+UNIQUE(agent_id, capability)
+```
+
+## 🔌 Integration Guide
+
+### Registering an Existing EON Service as an Agent
+
+Any EON service can be integrated by exposing a simple HTTP endpoint that accepts:
+
 ```json
+POST /api/v1/execute
 {
-  "task_id": "task-uuid",
-  "sub_task_id": "sub-task-uuid",
-  "capability": "workflow_optimization",
-  "input": {
-    "query": "original user query",
-    "step_description": "Analyze bottlenecks",
-    "capability": "workflow_optimization",
-    "step_index": 0,
-    "total_steps": 3
-  }
+  "capability": "analyze_data",
+  "input": { /* task-specific data */ },
+  "context": { /* optional context from previous steps */ }
 }
-```
 
-**Agent Execution Response**:
-```json
+Response:
 {
-  "output": { /* agent-specific JSON */ },
   "success": true,
-  "message": "Completed"
+  "output": { /* result */ },
+  "metadata": { /* optional: timing, resources used, etc */ }
 }
 ```
 
----
+**Steps**:
+1. Ensure your service has an `/api/v1/execute` endpoint (or wrap existing logic)
+2. Register it as an agent via the dashboard or API
+3. Include the capability strings your service supports
+4. The orchestrator will automatically match and dispatch tasks
 
-## 🎛️ Dashboard Guide
-
-### Registering an Agent
-
-1. Click **"Register Agent"** button
-2. Fill in:
-   - **Name**: Human-readable name (e.g., "ML Registry")
-   - **Endpoint URL**: Where the agent's API is reachable (e.g., `http://ml-registry:8080`)
-   - **Description**: What the agent does (used for AI capability suggestion if left blank)
-   - **Capabilities**: List of capability strings this agent provides (e.g., `["model_registration", "experiment_tracking"]`)
-3. Click **Create Agent**
-
-The agent will appear in the Agents list. Admins can view stats and delete agents.
-
-### Submitting a Task
-
-1. Navigate to **Tasks** tab
-2. Type a natural language description in the textarea
-3. Click **"Preview Plan"** to see how the system will decompose your request (no execution)
-4. Click **"Execute"** to submit the task
-
-The system will:
-- Parse your query into a step-by-step plan
-- Find agents for each step based on capabilities
-- Execute sub-tasks in parallel (respecting concurrency limits)
-- Aggregate results into a final response
-- Update the task status in real-time
-
-### Monitoring Executions
-
-- **Dashboard tab**: System overview, agent health, recent executions
-- **Executions tab**: Full execution log with input/output snapshots, latencies, success/failure indicators
-- **Task details**: Click the 👁️ icon next to any task to see sub-task progress and outputs
-
----
-
-## 🔌 Integrating Existing Agents
-
-The Orchestrator is designed to work with **any existing AI service** (including all your EON projects). To integrate:
-
-### 1. Implement `/agent/execute` endpoint
-
-Your agent needs to respond to POST requests at `/agent/execute` with JSON body:
-
-```json
-{
-  "task_id": "...",
-  "sub_task_id": "...",
-  "capability": "your_capability_name",
-  "input": {
-    "query": "original user query",
-    "step_description": "...",
-    "capability": "...",
-    ...
-  }
-}
-```
-
-Your agent should:
-- Perform the requested capability
-- Return `{ "output": {...}, "success": true }` on success
-- Return `{ "success": false, "error": "message" }` on failure
-- Respond within 120 seconds (or the orchestrator will timeout)
-
-### 2. Register the agent via API or Dashboard
-
-Ensure your agent's Docker service is on the same network as the orchestrator (Docker Compose handles this).
-
-### Example: Workflow Assistant Integration
+### Example: EON-025 Intelligent Workflow Assistant
 
 ```bash
 curl -X POST http://localhost:8081/api/v1/agents \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Workflow Assistant",
-    "description": "Analyzes execution patterns and suggests optimizations",
-    "endpoint_url": "http://workflow-assistant:8081",
+    "description": "AI-powered workflow optimization",
+    "endpoint_url": "http://workflow-assistant:8081/api/v1/execute",
     "capabilities": [
-      "workflow_optimization",
-      "bottleneck_detection",
-      "performance_prediction"
-    ]
+      "optimize_workflow",
+      "detect_bottlenecks",
+      "predict_performance"
+    ],
+    "metadata": {"project": "EON-025"}
   }'
 ```
 
-Once registered, tasks containing these keywords will be automatically dispatched to this agent.
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OPENROUTER_API_KEY` | **Required** | OpenRouter API key for LLM parsing/aggregation |
-| `OPENROUTER_MODEL` | `anthropic/claude-3-opus` | Model to use (claude, gpt-4, etc. via OpenRouter) |
-| `PORT` | `8081` | Backend HTTP server port |
-| `DATABASE_URL` | `sqlite:/data/orchestrator.db` | SQLite database path (persist via volume) |
-| `MAX_CONCURRENT_TASKS` | `10` | Maximum parallel sub-tasks executing |
-| `TASK_TIMEOUT_SECONDS` | `300` | Total task timeout (5 min) |
-| `ENABLE_LEARNING` | `true` | Track performance metrics |
-| `RUST_LOG` | `info` | Logging level (debug, info, warn, error) |
-
-### Docker Compose Configuration
-
-Edit `docker-compose.yml` to:
-- Change port mappings
-- Add persistent volumes
-- Configure network settings
-- Add resource limits (CPU/Memory)
-
----
-
-## 🗄️ Database Schema
-
-The orchestrator uses SQLite with 5 tables:
-
-- **agents**: Registered AI agents (id, name, endpoint, capabilities JSON, status)
-- **tasks**: User tasks with parsing results and status
-- **sub_tasks**: Individual agent invocations (linked to task)
-- **executions**: Audit log of all system actions (for debugging)
-- **agent_performance**: Aggregated success rates and latencies per capability
-
-Database is persisted to `./data/orchestrator.db` (Docker) or configured path.
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐
-│   Frontend      │  React + TypeScript + Tailwind
-│   (Port 3000)   │  Dashboard, Task UI, Agent Management
-└────────┬────────┘
-         │ HTTP/REST
-         ▼
-┌─────────────────────────────────────────────┐
-│          Backend (Axum)                     │
-│  ┌────────────────────────────────────────┐ │
-│  │  Handlers (REST API)                   │ │
-│  │  - Agents / Tasks / Executions         │ │
-│  └──────────────┬─────────────────────────┘ │
-│                 │                          │
-│  ┌──────────────▼─────────────────────────┐ │
-│  │  TaskService (Orchestration Core)      │ │
-│  │  - Parse natural language with LLM     │ │
-│  │  - Create execution plan               │ │
-│  │  - Dispatch to agents (parallel)       │ │
-│  │  - Aggregate results                   │ │
-│  └──────────────┬─────────────────────────┘ │
-│                 │                          │
-│  ┌──────────────▼─────────────────────────┐ │
-│  │  AgentService                          │ │
-│  │  - Capability matching                 │ │
-│  │  - Performance tracking                │ │
-│  └──────────────┬─────────────────────────┘ │
-│                 │                          │
-│  ┌──────────────▼─────────────────────────┐ │
-│  │  LLMService (OpenRouter)               │ │
-│  │  - Parse tasks → plan                  │ │
-│  │  - Aggregate multi-agent results       │ │
-│  └────────────────────────────────────────┘ │
-└─────────────────┬───────────────────────────┘
-                  │
-         ┌────────▼────────┐
-         │   SQLite DB     │  Agents, Tasks, Executions, Performance
-         └─────────────────┘
-```
-
-### Data Flow
-
-1. User submits query → `POST /api/v1/tasks`
-2. TaskService calls LLMService.parse_task() → execution plan (capability steps)
-3. For each step: AgentService finds agent(s) with matching capability
-4. TaskService dispatches sub-tasks to agent endpoints in parallel
-5. Agents process and return results
-6. TaskService calls LLMService.aggregate_results() to synthesize final output
-7. Task marked completed; performance metrics updated
-
----
-
 ## 🧪 Testing
 
-### Backend
+### Backend Tests
 
 ```bash
 cd backend
-cargo test
+cargo test --workspace
+cargo test -- --nocapture  # With output
 ```
 
-### Frontend
+### Frontend Tests
 
 ```bash
 cd frontend
 npm test
+npm run test:ui  # With Vitest UI
 ```
 
-### Integration Test
+### Integration Tests
 
 ```bash
-# With Docker running
-curl -X POST http://localhost:8081/api/v1/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"user_query": "Analyze system health"}'
+# Start the system
+docker-compose up -d
+
+# Run the integration test script
+./scripts/integration-test.sh
 ```
 
----
+## 📈 Performance Considerations
 
-## 🔧 Development
+- **Connection Pooling**: SQLite connection pool (r2d2) for concurrent access
+- **Async Everything**: Tokio runtime with multi-threaded scheduler
+- **WAL Mode**: Write-Ahead Logging for concurrent reads/writes
+- **Circuit Breaker**: Ready for integration (pattern implemented in agent_client)
+- **Response Caching**: Entity tag (ETag) support ready for static data
+- **Compression**: gzip enabled in Nginx for all responses
 
-### Local Development (no Docker)
+## 🗺️ Roadmap
 
-**Backend**:
-```bash
-cd backend
-# Install SQLite and set OPENROUTER_API_KEY env var
-cargo run
-# Server runs on http://localhost:8081
-```
+- [ ] WebSocket support for real-time task updates
+- [ ] Agent auto-discovery from service mesh
+- [ ] Priority-based scheduling (Urgent vs Best-Effort)
+- [ ] Conditional branching in execution plans
+- [ ] Multi-LLM fallback (different models for different task types)
+- [ ] A/B testing framework for planning algorithms
+- [ ] Distributed execution across network nodes
+- [ ] Authentication & rate limiting
+- [ ] Metrics export to Analytics Aggregator (self-monitoring)
+- [ ] PostgreSQL backend option for horizontal scaling
 
-**Frontend**:
-```bash
-cd frontend
-npm install
-npm run dev
-# Frontend runs on http://localhost:3000 (proxied to backend:8081)
-```
+## 🤝 Contributing
 
-### Database Migrations
+We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-Migrations are in `backend/migrations/`. They run automatically on startup via `sqlx::migrate!()`.
+### Code of Conduct
 
-To create a new migration:
-```sql
--- backend/migrations/000002_add_xxx.sql
--- +goose Up
-CREATE TABLE xxx (...);
--- +goose Down
-DROP TABLE xxx;
-```
+This project follows the [Contributor Covenant](https://www.contributor-covenant.org/). By participating, you agree to its terms.
 
----
+## 📄 License
 
-## 📊 Performance Considerations
-
-- **SQLite WAL mode** enabled for concurrent reads
-- **Connection pooling** via `SqlitePool`
-- **Async HTTP** with connection reuse for agent calls
-- **Bounded concurrency** (configurable via `MAX_CONCURRENT_TASKS`)
-- **Circuit breaker pattern** ready for agent endpoint failures
-- **Response caching** for static data (agents list)
-
----
-
-## 🚧 Future Enhancements
-
-- **WebSocket** for real-time task updates (currently polling via dashboard)
-- **Agent auto-discovery** from service mesh (Consul, etc.)
-- **Priority-based scheduling** (Urgent vs Best-Effort task queues)
-- **Advanced planning**: conditional branches, loops, error recovery workflows
-- **Multi-LLM fallback**: different models for different task types (code vs natural language)
-- **Distributed execution** across network clusters
-- **Authentication & rate limiting** middleware
-- **Metrics export** to Analytics Aggregator (self-monitoring ecosystem)
-- **A/B testing** framework for planning algorithms
-- **Web UI for agent endpoint testing** (test agents directly from dashboard)
-
----
-
-## 📝 License
-
-MIT License - see LICENSE file for details.
-
----
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-Built by Eon for Daniel Lindestad as part of the EON project series.
-Part of the OpenClaw automation ecosystem.
+Built with:
+- [Axum](https://github.com/tokio-rs/axum) - Ergonomic Rust web framework
+- [React](https://reactjs.org/) - UI library
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
+- [Recharts](https://recharts.org/) - Chart library
+- [OpenRouter](https://openrouter.ai/) - LLM aggregation
 
 ---
 
-## 📚 Related Projects
+**Made with ❤️ by the EON Team**
 
-- **EON-024**: Automation Workflow Orchestrator (visual workflow designer)
-- **EON-025**: Intelligent Workflow Assistant (AI for workflow optimization)
-- **EON-022**: Analytics Aggregator (unified metrics dashboard)
-- **EON-023**: ML Model Registry & Experiment Tracker
-- **EON-016**: AI-Powered Code Review Assistant
-
-All are designed to integrate seamlessly with this orchestrator.
+*Last updated: 2026-04-05*

@@ -1,36 +1,34 @@
 import React from 'react';
-import { useStore } from './store';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
 import Tasks from './pages/Tasks';
-import Executions from './pages/Executions';
-import Sidebar from './components/Sidebar';
+import Analytics from './pages/Analytics';
+import { useStore } from './store/useStore';
 
 function App() {
-  const { activeTab, sidebarOpen } = useStore();
+  const { fetchStats, fetchAgents, fetchHealth } = useStore();
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'agents':
-        return <Agents />;
-      case 'tasks':
-        return <Tasks />;
-      case 'executions':
-        return <Executions />;
-      default:
-        return <Dashboard />;
-    }
-  };
+  // Initial data fetch
+  React.useEffect(() => {
+    fetchStats();
+    fetchAgents();
+    fetchHealth();
+  }, [fetchStats, fetchAgents, fetchHealth]);
 
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100">
-      <Sidebar />
-      <main className={`flex-1 overflow-auto transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        <div className="p-6">{renderContent()}</div>
-      </main>
-    </div>
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/agents" element={<Agents />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/analytics" element={<Analytics />} />
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
 
