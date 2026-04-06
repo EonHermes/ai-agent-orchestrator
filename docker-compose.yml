@@ -3,89 +3,59 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: snippets-postgres
+    container_name: task-dashboard-db
     environment:
-      POSTGRES_DB: snippets
-      POSTGRES_USER: snippets
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snippets_password_please_change}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: task_dashboard
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U snippets"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - snippets-network
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: snippets-backend
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: task-dashboard-backend
     environment:
-      DATABASE_URL: postgres://snippets:${POSTGRES_PASSWORD:-snippets_password_please_change}@postgres:5432/snippets
-      SEARCH_INDEX_PATH: /app/search_index
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-to-a-64-char-secret}
-      JWT_EXPIRY_SECONDS: ${JWT_EXPIRY_SECONDS:-86400}
-      RUST_LOG: ${RUST_LOG:-info}
-      HOST: 0.0.0.0
-      PORT: 8080
-    volumes:
-      - search_index:/app/search_index
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/task_dashboard
+      RUST_LOG: debug
+      CORS_ALLOW_ORIGIN: http://localhost:3000
     ports:
       - "8080:8080"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/migrations:/app/migrations
+      - ./backend/tests:/app/tests
+      - cargo-cache:/usr/local/cargo/registry
+      - target:/app/target
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - snippets-network
-    command: >
-      sh -c "
-      echo 'Waiting for database...' &&
-      while ! nc -z postgres 5432; do
-        sleep 1
-      done &&
-      echo 'Starting backend...' &&
-      /app/snippet-backend
-      "
-    restart: unless-stopped
+    command: cargo run --bin task-dashboard-backend
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    container_name: snippets-frontend
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: task-dashboard-frontend
     ports:
       - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - snippets-network
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    container_name: snippets-nginx
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+      - /app/dist
     depends_on:
       - backend
-      - frontend
-    networks:
-      - snippets-network
-    restart: unless-stopped
 
 volumes:
   postgres_data:
-  search_index:
-
-networks:
-  snippets-network:
-    driver: bridge
+  cargo-cache:
+  target:

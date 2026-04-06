@@ -1,60 +1,37 @@
-# Build outputs
+# Dependencies
+node_modules/
 target/
+**/target/
+Cargo.lock
+**/Cargo.lock
+
+# Build outputs
 dist/
 build/
-*.a
-*.so
-*.dylib
-*.lib
-*.dll
-*.exe
-*.pdb
+*.log
 
-# Dependencies
-Cargo.lock
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
-!.env.example
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
+
+# OS
 .DS_Store
-
-# Logs
-logs/
-*.log
-
-# Runtime data
-*.pid
-*.seed
-*.cover
-
-# Generated files
-.nyc_output/
-coverage/
-.nyc_output/
-
-# OS generated files
 Thumbs.db
-.DS_Store
 
-# Backend specific
-search_index/
+# Database
 *.db
 *.sqlite
 
-# Frontend specific
-vite.config.ts.timestamp-*
+# Docker
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+.cache/
