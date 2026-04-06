@@ -2,28 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-eon-background text-eon-text;
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0f172a;
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-eon-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors;
-  }
-  
-  .btn-secondary {
-    @apply bg-eon-surfaceLight text-eon-text px-4 py-2 rounded-lg border border-eon-border hover:bg-eon-surface transition-colors;
-  }
+body {
+  margin: 0;
+  min-height: 100vh;
+}
 
-  .card {
-    @apply bg-eon-surface rounded-lg border border-eon-border p-6;
-  }
-
-  .input {
-    @apply bg-eon-background border border-eon-border rounded-lg px-4 py-2 text-eon-text focus:outline-none focus:ring-2 focus:ring-eon-primary;
-  }
-
-  .label {
-    @apply block text-sm font-medium text-eon-textSecondary mb-2;
-  }
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
 }

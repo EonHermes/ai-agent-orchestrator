@@ -1,35 +1,97 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import { createUser, login as apiLogin, getSnippets, createSnippet as apiCreateSnippet, deleteSnippet } from './api';
+import { User, Snippet } from './types';
+import Navigation from './components/Navigation';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Agents from './pages/Agents';
-import Tasks from './pages/Tasks';
-import Analytics from './pages/Analytics';
-import { useStore } from './store/useStore';
+import Snippets from './pages/Snippets';
+import CreateSnippet from './pages/CreateSnippet';
+import Search from './pages/Search';
 
-function App() {
-  const { fetchStats, fetchAgents, fetchHealth } = useStore();
+const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Initial data fetch
-  React.useEffect(() => {
-    fetchStats();
-    fetchAgents();
-    fetchHealth();
-  }, [fetchStats, fetchAgents, fetchHealth]);
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem('user');
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (userData: User, token: string) => {
+    setUser(userData);
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <Router>
-      <Layout>
+    <div className="min-h-screen bg-slate-900">
+      {user && <Navigation />}
+      <main className="max-w-7xl mx-auto">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/agents" element={<Agents />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" replace />} />
+          
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Dashboard user={user} />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/snippets" element={
+            <ProtectedRoute>
+              <Snippets userId={user!.id} />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/snippets/:id" element={
+            <ProtectedRoute>
+              <SnippetDetail />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/snippets/:id/edit" element={
+            <ProtectedRoute>
+              <CreateSnippet />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/create" element={
+            <ProtectedRoute>
+              <CreateSnippet />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/search" element={
+            <ProtectedRoute>
+              <Search />
+            </ProtectedRoute>
+          } />
         </Routes>
-      </Layout>
-    </Router>
+      </main>
+    </div>
   );
-}
+};
 
 export default App;

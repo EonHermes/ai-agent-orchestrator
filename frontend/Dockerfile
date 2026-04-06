@@ -1,35 +1,31 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine as builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-RUN npm ci --only=production
+# Copy manifests
+COPY frontend/package*.json ./
+COPY frontend/tsconfig*.json ./
+COPY frontend/vite.config.ts ./
+COPY frontend/tailwind.config.js ./
+COPY frontend/index.html ./
+COPY frontend/src ./src
+COPY frontend/public ./public
 
-# Copy source
-COPY . .
+# Install dependencies
+RUN npm ci
 
 # Build
 RUN npm run build
 
-# Production stage with Nginx
-FROM nginx:alpine AS runtime
+# Run stage
+FROM nginx:alpine
 
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Create non-root user
-RUN addgroup -g 1001 -S nginx-group && \
-    adduser -S nginx-user -G nginx-group
-
-RUN chown -R nginx-user:nginx-group /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
-
-USER nginx-user
+# Copy nginx config
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

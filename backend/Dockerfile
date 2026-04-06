@@ -1,47 +1,35 @@
 # Build stage
-FROM rust:1.75-slim AS builder
+FROM rust:1.74-slim as builder
 
 WORKDIR /app
 
-# Install build dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
-    cmake \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests
-COPY Cargo.toml ./
-COPY src ./src
+COPY backend/Cargo.toml ./
+COPY backend/src ./src
+COPY backend/migrations ./migrations
 
-# Build for release
-RUN cargo build --release --locked
+# Build
+RUN cargo build --release
 
-# Runtime stage
-FROM debian:bookworm-slim AS runtime
+# Run stage
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    tzdata \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user
-RUN groupadd -r orchestrator && useradd -r -g orchestrator orchestrator
-
 # Copy binary from builder
-COPY --from=builder /app/target/release/ai-agent-orchestrator /usr/local/bin/ai-agent-orchestrator
+COPY --from=builder /app/target/release/snippet-backend /app/snippet-backend
+COPY backend/.env.example /app/.env.example
 
-# Create data directory
-RUN mkdir -p /data && chown -R orchestrator:orchestrator /data /app
+EXPOSE 8080
 
-USER orchestrator
-
-EXPOSE 8081
-
-ENV RUST_LOG=info
-ENV DATABASE_URL=sqlite:/data/orchestrator.db
-
-CMD ["ai-agent-orchestrator"]
+CMD ["/app/snippet-backend"]

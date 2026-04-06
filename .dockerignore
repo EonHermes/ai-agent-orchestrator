@@ -1,0 +1,70 @@
+# Build context exclusions for Docker builds
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# Node
+node_modules/
+npm-debug.log
+dist/
+
+# Git
+.git/
+.gitignore
+**/.git/**
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other projects in repo (keep context minimal)
+**/openloops/
+**/ai-agent-orchestrator/
+**/collaborative-code-editor/
+**/crates/
+**/dashboard/
+**/distributed-system-health-monitor/
+**/dynamic-playlist-generator/
+**/example-project/
+**/examples/
+**/knowledge-graph/
+**/ml-pipeline-orchestrator/
+**/network-latency-monitor/
+**/personal-analytics-dashboard/
+**/personal-knowledge-graph/
+**/smart-calendar-analyzer/
+**/smart-homelab-dashboard/
+**/task-dashboard/
+**/tutorial-generator/
+**/tutorial-viewer/
+**/memory/
+**/e-*
+**/eon-*
+**/README.md (other than root)
+
+# Certificates
+ssl/
+*.pem
+*.crt
+*.key
+
+# Backend test artifacts
+backend/integration_test.rs
+backend/src/test/
+backend/*.log
+
+# Documentation build artifacts
+docs/_site/
+docs/.jekyll-cache/
+
+# Temporary files
+*.tmp
+*.temp
