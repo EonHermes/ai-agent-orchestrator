@@ -1,64 +1,40 @@
-use std::env;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use task_dashboard_backend::{api, db, error::Result};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use actix_web::{web, App, HttpServer, HttpResponse, middleware::Logger};
-use actix_cors::Cors;
-use tracing_subscriber::{EnvFilter, fmt};
-
-mod config;
-mod db;
-mod models;
-mod handlers;
-mod search;
-mod auth;
-mod middleware;
-
-use config::AppConfig;
-use db::DbPool;
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    dotenv::dotenv().ok();
-
-    // Initialize logger
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Initialize tracing
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "task_dashboard_backend=debug,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
         .init();
 
     // Load configuration
-    let config = AppConfig::from_env().expect("Failed to load configuration");
+    let config = Arc::new(config::Config::from_env()?);
 
-    // Initialize database
-    let pool = DbPool::new(&config.database_url).await.expect("Failed to connect to database");
+    // Connect to database
+    let db_pool = db::connect(&config).await?;
 
     // Run migrations
-    sqlx::migrate!("./migrations").run(&pool).await.expect("Failed to run migrations");
+    sqlx::migrate!("./migrations").run(&db_pool).await?;
 
-    // Initialize search index
-    let search_index = search::SearchIndex::new(&config.search_index_path).await.expect("Failed to initialize search index");
+    tracing::info!("Database migrations applied successfully");
 
-    // Bind address
-    let addr = format!("{}:{}", config.host, config.port);
-    let addr: SocketAddr = addr.parse().expect("Invalid bind address");
+    // Build application routes
+    let app = api::router(db_pool, config);
 
-    tracing::info!("Starting server on {}", addr);
+    // Bind and serve
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    tracing::info!("Listening on {}", addr);
 
-    HttpServer::new(move || {
-        let cors = Cors::default()
-            .allow_any_origin()
-            .allowed_methods(["GET", "POST", "PUT", "DELETE"])
-            .allowed_headers(actix_web::http::header::CONTENT_TYPE);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app.into_make_service())
+        .await
+        .map_err(|e| error::Error::Io(e).into())
 
-        App::new()
-            .wrap(Logger::default())
-            .wrap(cors)
-            .app_data(web::Data::new(pool.clone()))
-            .app_data(web::Data::new(search_index.clone()))
-            .app_data(web::Data::new(config.clone()))
-            .configure(handlers::config_routes)
-            .default_service(web::route().to(|| async { HttpResponse::NotFound().body("Not Found") }))
-    })
-    .bind(addr)?
-    .run()
-    .await
 }

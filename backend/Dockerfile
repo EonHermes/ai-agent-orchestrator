@@ -1,35 +1,50 @@
 # Build stage
-FROM rust:1.74-slim as builder
+FROM rust:1.75-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
-    libssl-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests
-COPY backend/Cargo.toml ./
-COPY backend/src ./src
-COPY backend/migrations ./migrations
+COPY Cargo.toml ./
+COPY sqlx-data.json ./
 
-# Build
-RUN cargo build --release
+# Build dependencies (this will be cached if Cargo.toml doesn't change)
+RUN cargo build --release --bin task-dashboard-backend --locked || true
 
-# Run stage
-FROM debian:bullseye-slim
+# Copy source code
+COPY src ./src
+COPY migrations ./migrations
+COPY tests ./tests
 
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Build application
+RUN cargo build --release --bin task-dashboard-backend --locked
+
+# Runtime stage
+FROM debian:bookworm-slim AS runtime
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/target/release/snippet-backend /app/snippet-backend
-COPY backend/.env.example /app/.env.example
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the binary from builder
+COPY --from=builder /app/target/release/task-dashboard-backend /usr/local/bin/
+
+# Copy migrations
+COPY --from=builder /app/migrations ./migrations
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+USER appuser
 
 EXPOSE 8080
 
-CMD ["/app/snippet-backend"]
+CMD ["task-dashboard-backend"]

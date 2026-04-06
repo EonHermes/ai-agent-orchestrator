@@ -1,24 +1,23 @@
 [package]
-name = "snippet-backend"
-version = "0.1.0"
+name = "task-dashboard-backend"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-actix-web = "4.4"
-actix-rt = "2.9"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sqlx = { version = "0.7", features = ["runtime-actix-rustls", "postgres", "chrono", "uuid"] }
-uuid = { version = "1.4", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
+axum = { version = "0.7", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "macros", "chrono", "uuid"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower = "0.4"
+tower-http = { version = "0.4", features = ["cors", "trace"] }
 tracing = "0.1"
-tracing-subscriber = "0.3"
-thiserror = "1.0"
-jsonwebtoken = "8.4"
-bcrypt = "0.15"
-tantivy = "0.21"
-validator = "0.16"
-futures = "0.3"
-actix-cors = "0.6"
-config = "0.13"
-dotenv = "0.15"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+config = "0.14"
+
+[dev-dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+tokio-test = "0.4"

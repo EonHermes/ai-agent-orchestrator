@@ -1,0 +1,5 @@
+{
+  "offline": true,
+  "database_url": "postgres://postgres:postgres@localhost:5432/task_dashboard",
+  "query_runner": "inprocess"
+}
