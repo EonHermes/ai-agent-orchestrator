@@ -2,20 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
-}
-
 body {
-  margin: 0;
-  min-height: 100vh;
+  @apply bg-gray-900 text-gray-100;
 }
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors;
 }
+
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
+}
+
+.btn-secondary {
+  @apply bg-gray-700 hover:bg-gray-600 text-white;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white;
+}
+
+.input {
+  @apply w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+.card {
+  @apply bg-gray-800 rounded-lg p-6 border border-gray-700;
+}
+
+.badge {
+  @apply px-2 py-1 text-xs rounded-full font-medium;
+}
+
+.badge-todo { @apply bg-gray-600; }
+.badge-in_progress { @apply bg-yellow-600; }
+.badge-done { @apply bg-green-600; }

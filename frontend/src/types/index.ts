@@ -1,146 +1,51 @@
-export interface Agent {
+export type TaskStatus = 'todo' | 'in_progress' | 'done';
+
+export interface Task {
   id: string;
-  name: string;
+  title: string;
   description?: string;
-  endpoint_url: string;
-  capabilities: string[];
-  status: AgentStatus;
-  metadata?: Record<string, any>;
+  status: TaskStatus;
+  priority: number;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }
 
-export type AgentStatus = 'active' | 'inactive' | 'error';
-
-export interface NewAgent {
-  name: string;
+export interface CreateTask {
+  title: string;
   description?: string;
-  endpoint_url: string;
-  capabilities: string[];
-  metadata?: Record<string, any>;
-}
-
-export interface UserTask {
-  id: string;
-  user_query: string;
-  parsed_plan?: ParsedPlan;
   status: TaskStatus;
-  error_message?: string;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
+  priority: number;
+  tags: string[];
 }
 
-export type TaskStatus = 'pending' | 'dispatched' | 'completed' | 'failed' | 'cancelled';
-
-export interface NewTask {
-  user_query: string;
+export interface UpdateTask {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: number;
+  tags?: string[];
 }
 
-export interface SubTask {
-  id: string;
-  task_id: string;
-  agent_id: string;
-  capability: string;
-  input?: Record<string, any>;
-  output?: Record<string, any>;
-  error?: string;
-  status: SubTaskStatus;
-  started_at?: string;
-  completed_at?: string;
-  latency_ms?: number;
+export interface TaskFilter {
+  status?: TaskStatus;
+  priority_min?: number;
+  priority_max?: number;
+  tags: string[];
+  search?: string;
 }
 
-export type SubTaskStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-export interface Execution {
-  id: string;
-  task_id: string;
-  agent_id?: string;
-  step: number;
-  action: string;
-  input_snapshot?: Record<string, any>;
-  output_snapshot?: Record<string, any>;
-  latency_ms?: number;
-  success: boolean;
+export interface ApiResponse<T> {
+  data: T;
   timestamp: string;
 }
 
-export interface ParsedPlan {
-  steps: PlanStep[];
+export interface WebSocketMessage {
+  type: string;
+  payload: any;
 }
 
-export interface PlanStep {
-  agent_id: string;
-  capability: string;
-  input: Record<string, any>;
-  order: number;
-}
-
-export interface AgentListResponse {
-  agents: Agent[];
-  total: number;
-}
-
-export interface TaskResponse {
-  task: UserTask;
-  sub_tasks: SubTask[];
-}
-
-export interface ExecutionStats {
-  total_executions: number;
-  success_rate: number;
-  avg_latency_ms: number;
-  by_agent: AgentStats[];
-}
-
-export interface AgentStats {
-  agent_id: string;
-  agent_name: string;
-  total_tasks: number;
-  success_rate: number;
-  avg_latency_ms: number;
-}
-
-export interface TaskSubmission {
-  user_query: string;
-}
-
-export interface ParseOnlyRequest {
-  user_query: string;
-}
-
-export interface ParseOnlyResponse {
-  success: boolean;
-  parsed?: ParseResult[];
-  error?: string;
-}
-
-export interface ParseResult {
-  action: string;
-  description: string;
-  inputs: string[];
-  outputs: string[];
-  complexity: string;
-}
-
-export interface HealthResponse {
-  status: string;
-  database: string;
+export interface TaskBroadcast extends WebSocketMessage {
+  task: Task;
   timestamp: string;
-}
-
-export interface StatusResponse {
-  agent_count: number;
-  task_stats: TaskStats;
-  uptime_seconds: number;
-  start_time: string;
-}
-
-export interface TaskStats {
-  pending: number;
-  dispatched: number;
-  completed: number;
-  failed: number;
-  total: number;
 }
